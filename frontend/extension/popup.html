@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>LinkedIn Comment Assistant</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header>
+      <h1>LinkedIn Comment Assistant</h1>
+      <p class="subtitle">MVP — fills a test comment. You click submit.</p>
+    </header>
+
+    <section class="status">
+      <div class="status-row">
+        <span class="status-dot" id="login-dot" data-state="unknown"></span>
+        <span id="login-text">Checking LinkedIn login…</span>
+      </div>
+    </section>
+
+    <section class="actions">
+      <button id="scan-feed-btn" class="btn btn-secondary">Scan Feed Posts</button>
+      <button id="post-comment-btn" class="btn btn-primary">Post Test Comment</button>
+    </section>
+
+    <section class="log">
+      <div id="log-output" class="log-output">Open the LinkedIn feed, then use the buttons above.</div>
+    </section>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
