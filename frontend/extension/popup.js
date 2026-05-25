@@ -6,6 +6,7 @@
 const loginDot = document.getElementById("login-dot");
 const loginText = document.getElementById("login-text");
 const scanBtn = document.getElementById("scan-feed-btn");
+const togglePanelBtn = document.getElementById("toggle-panel-btn");
 const commentBtn = document.getElementById("post-comment-btn");
 const logOutput = document.getElementById("log-output");
 
@@ -56,6 +57,20 @@ scanBtn.addEventListener("click", async () => {
     }
   } catch (err) {
     logLine(`scan failed: ${err.message || err}`);
+  }
+});
+
+togglePanelBtn.addEventListener("click", async () => {
+  const tab = await getActiveLinkedInTab();
+  if (!tab) {
+    logLine("Open a LinkedIn tab first (https://www.linkedin.com/feed/).");
+    return;
+  }
+  try {
+    const res = await chrome.tabs.sendMessage(tab.id, { type: "TOGGLE_PANEL" });
+    logLine(`Panel ${res?.visible ? "shown" : "hidden"}.`);
+  } catch (err) {
+    logLine(`toggle failed: ${err.message || err}`);
   }
 });
 

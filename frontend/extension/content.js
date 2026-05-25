@@ -1,39 +1,103 @@
 // Runs inside every linkedin.com page (see manifest content_scripts).
 // `selectors.js` is loaded BEFORE this file, so window.LI_SELECTORS exists.
+// `panel.js` is loaded AFTER and reads window.LI_FEED.
 //
 // Responsibilities:
-//   - announce injection (console log)
-//   - scan the feed for posts and extract { author, text, postId }
-//   - on demand, open the comment editor of the FIRST visible post and
-//     fill it with a test comment (user must click Submit themselves)
+//   - watch the feed via MutationObserver (LinkedIn lazy-renders + virtualizes)
+//   - keep a URN-keyed cache of detected posts so the panel/popup has fresh data
+//   - on demand, fill the comment editor of a specific post
 
 const TEST_COMMENT = "Amazing insights. Really enjoyed this perspective.";
 const LOG_PREFIX = "[LinkedIn Comment Assistant]";
 
 console.log(`${LOG_PREFIX} content script injected on ${location.href}`);
 
+// URN → { post object, lastSeen, element WeakRef }
+// We key by URN because LinkedIn's virtualized feed reuses + removes DOM nodes
+// as you scroll. The URN is the only stable identifier.
+const postCache = new Map();
+const listeners = new Set();
+
 function extractPostId(postEl) {
   for (const attr of LI_SELECTORS.postIdAttrs) {
     const val = postEl.getAttribute(attr);
-    if (val) return val;
+    if (val && val.includes("urn:li:activity:")) return val;
+  }
+  // Some posts nest the URN one level down — search inside.
+  const nested = postEl.querySelector("[data-urn*='urn:li:activity:'], [data-id*='urn:li:activity:']");
+  if (nested) {
+    return nested.getAttribute("data-urn") || nested.getAttribute("data-id");
   }
   return null;
 }
 
-function readFeedPosts() {
+function extractOne(postEl, idx) {
+  const authorEl = liQuery(LI_SELECTORS.postAuthor, postEl);
+  const textEl = liQuery(LI_SELECTORS.postText, postEl);
+  return {
+    index: idx,
+    postId: extractPostId(postEl),
+    author: authorEl ? authorEl.innerText.trim() : null,
+    text: textEl ? textEl.innerText.trim().slice(0, 500) : null,
+  };
+}
+
+function scanFeedNow() {
   const postEls = liQueryAll(LI_SELECTORS.post);
-  const posts = postEls.map((el, idx) => {
-    const authorEl = liQuery(LI_SELECTORS.postAuthor, el);
-    const textEl = liQuery(LI_SELECTORS.postText, el);
-    return {
-      index: idx,
-      postId: extractPostId(el),
-      author: authorEl ? authorEl.innerText.trim() : null,
-      text: textEl ? textEl.innerText.trim().slice(0, 500) : null,
-    };
+  let added = 0;
+  let updated = 0;
+
+  postEls.forEach((el, idx) => {
+    const post = extractOne(el, idx);
+    if (!post.postId) return; // skip junk nodes
+    const prior = postCache.get(post.postId);
+    postCache.set(post.postId, {
+      post,
+      element: new WeakRef(el),
+      lastSeen: Date.now(),
+    });
+    if (prior) updated++;
+    else added++;
   });
-  console.log(`${LOG_PREFIX} detected ${posts.length} feed posts`, posts);
-  return posts;
+
+  if (added || updated) {
+    console.log(`${LOG_PREFIX} scan: +${added} new, ${updated} refreshed, ${postCache.size} total`);
+    notifyListeners({ added, updated, total: postCache.size });
+  }
+  return getCachedPosts();
+}
+
+function getCachedPosts() {
+  return Array.from(postCache.values())
+    .sort((a, b) => b.lastSeen - a.lastSeen)
+    .map((entry) => entry.post);
+}
+
+function getPostElement(urn) {
+  const entry = postCache.get(urn);
+  if (!entry) return null;
+  const el = entry.element.deref();
+  if (el && document.contains(el)) return el;
+  // Element got recycled by virtualized scrolling — look it up again by URN.
+  const fresh = document.querySelector(
+    `[data-urn="${CSS.escape(urn)}"], [data-id="${CSS.escape(urn)}"]`
+  );
+  if (fresh) {
+    entry.element = new WeakRef(fresh);
+    return fresh;
+  }
+  return null;
+}
+
+function onPostsChanged(cb) {
+  listeners.add(cb);
+  return () => listeners.delete(cb);
+}
+
+function notifyListeners(delta) {
+  for (const cb of listeners) {
+    try { cb(delta, getCachedPosts()); } catch (err) { console.error(err); }
+  }
 }
 
 // Quill editors don't react to plain `.textContent = "..."` — the editor
@@ -43,13 +107,11 @@ function readFeedPosts() {
 function fillEditor(editorEl, text) {
   editorEl.focus();
 
-  // Clear placeholder state if Quill is showing one.
   const placeholder = editorEl.querySelector(LI_SELECTORS.emptyEditorPlaceholder);
   if (placeholder) {
     editorEl.innerHTML = "<p><br></p>";
   }
 
-  // Select existing content so the insert replaces (not appends to) it.
   const range = document.createRange();
   range.selectNodeContents(editorEl);
   const sel = window.getSelection();
@@ -59,8 +121,6 @@ function fillEditor(editorEl, text) {
   const inserted = document.execCommand("insertText", false, text);
 
   if (!inserted) {
-    // Fallback: write to the DOM and dispatch a synthetic input event so
-    // Quill / React listeners pick it up.
     editorEl.innerHTML = `<p>${text}</p>`;
     editorEl.dispatchEvent(
       new InputEvent("input", { bubbles: true, cancelable: true, data: text })
@@ -68,29 +128,40 @@ function fillEditor(editorEl, text) {
   }
 }
 
-async function openCommentEditorForFirstPost() {
-  const firstPost = liQuery(LI_SELECTORS.post);
-  if (!firstPost) {
-    return { ok: false, reason: "no_posts_found" };
+async function fillCommentForPost(urn, text) {
+  const targetPost = urn ? getPostElement(urn) : liQuery(LI_SELECTORS.post);
+  if (!targetPost) {
+    return { ok: false, reason: urn ? "post_not_visible" : "no_posts_found" };
   }
 
-  // Most posts render the comment editor lazily — clicking "Comment" mounts it.
-  let editor = liQuery(LI_SELECTORS.commentEditor, firstPost);
+  targetPost.scrollIntoView({ behavior: "smooth", block: "center" });
+
+  let editor = liQuery(LI_SELECTORS.commentEditor, targetPost);
   if (!editor) {
-    const trigger = liQuery(LI_SELECTORS.commentTriggerButton, firstPost);
-    if (!trigger) {
-      return { ok: false, reason: "no_comment_button" };
-    }
+    const trigger = liQuery(LI_SELECTORS.commentTriggerButton, targetPost);
+    if (!trigger) return { ok: false, reason: "no_comment_button" };
     trigger.click();
-    editor = await waitForElement(LI_SELECTORS.commentEditor, firstPost, 4000);
-    if (!editor) {
-      return { ok: false, reason: "editor_did_not_mount" };
-    }
+    editor = await waitForElement(LI_SELECTORS.commentEditor, targetPost, 4000);
+    if (!editor) return { ok: false, reason: "editor_did_not_mount" };
   }
 
-  firstPost.scrollIntoView({ behavior: "smooth", block: "center" });
-  fillEditor(editor, TEST_COMMENT);
-  return { ok: true, reason: "filled" };
+  fillEditor(editor, text || TEST_COMMENT);
+  return { ok: true, reason: "filled", urn };
+}
+
+function highlightPost(urn) {
+  const el = getPostElement(urn);
+  if (!el) return false;
+  el.scrollIntoView({ behavior: "smooth", block: "center" });
+  el.animate(
+    [
+      { outline: "3px solid rgba(10, 102, 194, 0.0)", outlineOffset: "0px" },
+      { outline: "3px solid rgba(10, 102, 194, 0.9)", outlineOffset: "6px" },
+      { outline: "3px solid rgba(10, 102, 194, 0.0)", outlineOffset: "0px" },
+    ],
+    { duration: 1400, iterations: 1 }
+  );
+  return true;
 }
 
 function waitForElement(selectorList, root, timeoutMs) {
@@ -114,23 +185,72 @@ function waitForElement(selectorList, root, timeoutMs) {
   });
 }
 
+// Throttle scans triggered by the feed-wide MutationObserver. LinkedIn fires
+// dozens of mutations per second while scrolling — we coalesce them.
+let scanScheduled = false;
+function scheduleScan() {
+  if (scanScheduled) return;
+  scanScheduled = true;
+  requestAnimationFrame(() => {
+    scanScheduled = false;
+    scanFeedNow();
+  });
+}
+
+function startFeedObserver() {
+  const root = document.body;
+  if (!root) return;
+  const observer = new MutationObserver(scheduleScan);
+  observer.observe(root, { childList: true, subtree: true });
+  console.log(`${LOG_PREFIX} feed observer started`);
+}
+
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type === "SCAN_FEED") {
-    sendResponse({ ok: true, posts: readFeedPosts() });
+    sendResponse({ ok: true, posts: scanFeedNow() });
+    return false;
+  }
+
+  if (message?.type === "GET_CACHED_POSTS") {
+    sendResponse({ ok: true, posts: getCachedPosts() });
     return false;
   }
 
   if (message?.type === "FILL_TEST_COMMENT") {
-    openCommentEditorForFirstPost()
+    fillCommentForPost(message.urn, message.text)
       .then((result) => sendResponse(result))
       .catch((err) => sendResponse({ ok: false, reason: String(err) }));
     return true; // async response
   }
 
+  if (message?.type === "HIGHLIGHT_POST") {
+    sendResponse({ ok: highlightPost(message.urn) });
+    return false;
+  }
+
+  if (message?.type === "TOGGLE_PANEL") {
+    const visible = window.LI_PANEL?.toggle();
+    sendResponse({ ok: true, visible });
+    return false;
+  }
+
   return false;
 });
 
-// Auto-scan once on initial load so the console shows posts without any click.
+// Expose to panel.js (loaded after this file).
+window.LI_FEED = {
+  scanFeedNow,
+  getCachedPosts,
+  fillCommentForPost,
+  highlightPost,
+  onPostsChanged,
+  TEST_COMMENT,
+};
+
+// Initial scan + start observing.
 window.addEventListener("load", () => {
-  setTimeout(readFeedPosts, 1500);
+  setTimeout(() => {
+    scanFeedNow();
+    startFeedObserver();
+  }, 1500);
 });
