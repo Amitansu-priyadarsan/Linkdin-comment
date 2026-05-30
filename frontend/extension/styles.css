@@ -16,7 +16,7 @@
 }
 
 body {
-  width: 320px;
+  width: 340px;
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-size: 13px;
@@ -41,6 +41,8 @@ header h1 {
   color: var(--muted);
 }
 
+/* ── Status ──────────────────────────────────────────────────────────── */
+
 .status {
   padding: 10px 14px;
   border-bottom: 1px solid var(--border);
@@ -50,6 +52,11 @@ header h1 {
   display: flex;
   align-items: center;
   gap: 8px;
+  margin-bottom: 4px;
+}
+
+.status-row:last-child {
+  margin-bottom: 0;
 }
 
 .status-dot {
@@ -58,17 +65,125 @@ header h1 {
   border-radius: 50%;
   background: var(--unknown);
   display: inline-block;
+  flex-shrink: 0;
 }
 
 .status-dot[data-state="ok"] { background: var(--ok); }
 .status-dot[data-state="warn"] { background: var(--warn); }
 .status-dot[data-state="unknown"] { background: var(--unknown); }
 
+/* ── Profile Section ─────────────────────────────────────────────────── */
+
+.profile-section,
+.scan-section,
+.settings-section {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.section-title {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg);
+  cursor: pointer;
+}
+
+.form-group {
+  margin-bottom: 8px;
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+.form-group label {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 3px;
+}
+
+.form-group input[type="text"],
+.form-group input[type="url"] {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--fg);
+  background: var(--bg);
+  transition: border-color 0.15s;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(10, 102, 194, 0.15);
+}
+
+.form-group input::placeholder {
+  color: var(--unknown);
+}
+
+/* ── Scan Mode ───────────────────────────────────────────────────────── */
+
+.scan-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--fg);
+  cursor: pointer;
+}
+
+.radio-label input[type="radio"] {
+  margin: 0;
+  accent-color: var(--primary);
+}
+
+/* ── Progress Bar ────────────────────────────────────────────────────── */
+
+.progress-container {
+  margin-top: 10px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--ok));
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────── */
+
 .actions {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 12px 14px;
+  padding: 10px 14px;
 }
 
 .btn {
@@ -79,6 +194,11 @@ header h1 {
   font-weight: 600;
   cursor: pointer;
   text-align: center;
+  transition: all 0.15s;
+}
+
+.btn-full {
+  width: 100%;
 }
 
 .btn-primary {
@@ -96,10 +216,31 @@ header h1 {
   border-color: var(--border);
 }
 
+.btn-secondary:hover {
+  background: #e5e7eb;
+}
+
 .btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* ── Settings ────────────────────────────────────────────────────────── */
+
+.settings-section details summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.settings-section details summary::-webkit-details-marker {
+  display: none;
+}
+
+.settings-section details[open] .form-group {
+  margin-top: 8px;
+}
+
+/* ── Log ─────────────────────────────────────────────────────────────── */
 
 .log {
   padding: 0 14px 14px;
@@ -111,7 +252,7 @@ header h1 {
   color: var(--muted);
   background: var(--secondary);
   border-radius: 6px;
-  max-height: 120px;
+  max-height: 100px;
   overflow-y: auto;
   white-space: pre-wrap;
   word-break: break-word;

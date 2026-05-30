@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "LinkedIn Comment Assistant (MVP)",
-  "version": "0.1.0",
-  "description": "Detect LinkedIn login, read feed posts, and auto-fill a test comment. The user clicks submit manually.",
+  "name": "LinkedIn Comment Assistant",
+  "version": "0.2.0",
+  "description": "AI scans your feed, picks the best posts, writes comments in your voice. You review and post.",
   "permissions": [
     "activeTab",
     "scripting",
@@ -20,6 +20,12 @@
     "default_title": "LinkedIn Comment Assistant"
   },
   "content_scripts": [
+    {
+      "matches": ["https://www.linkedin.com/*"],
+      "js": ["linkedinNetworkSpy.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
     {
       "matches": ["https://www.linkedin.com/*"],
       "js": ["selectors.js", "content.js", "panel.js"],

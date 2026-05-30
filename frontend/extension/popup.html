@@ -8,7 +8,7 @@
   <body>
     <header>
       <h1>LinkedIn Comment Assistant</h1>
-      <p class="subtitle">MVP — fills a test comment. You click submit.</p>
+      <p class="subtitle">AI-powered comments in your voice</p>
     </header>
 
     <section class="status">
@@ -16,16 +16,72 @@
         <span class="status-dot" id="login-dot" data-state="unknown"></span>
         <span id="login-text">Checking LinkedIn login…</span>
       </div>
+      <div class="status-row">
+        <span class="status-dot" id="backend-dot" data-state="unknown"></span>
+        <span id="backend-text">Checking backend…</span>
+      </div>
+    </section>
+
+    <section class="profile-section">
+      <h2 class="section-title">📋 My Profile</h2>
+      <div class="form-group">
+        <label for="user-topics">Topics I care about</label>
+        <input type="text" id="user-topics" placeholder="AI, startups, SaaS, dev tools" />
+      </div>
+      <div class="form-group">
+        <label for="user-role">My role</label>
+        <input type="text" id="user-role" placeholder="Founder building developer tools" />
+      </div>
+      <div class="form-group">
+        <label for="user-goal">My goal</label>
+        <input type="text" id="user-goal" placeholder="Build authority, connect with customers" />
+      </div>
+      <div class="form-group">
+        <label for="user-avoid">Avoid topics</label>
+        <input type="text" id="user-avoid" placeholder="Hiring, politics, motivational quotes" />
+      </div>
+    </section>
+
+    <section class="scan-section">
+      <h2 class="section-title">🎯 Feed Scan</h2>
+      <div class="scan-mode">
+        <label class="radio-label">
+          <input type="radio" name="scan-mode" value="auto" checked />
+          Auto-scroll (~100 posts, 25s)
+        </label>
+        <label class="radio-label">
+          <input type="radio" name="scan-mode" value="manual" />
+          Manual scroll (you control)
+        </label>
+      </div>
+      <button id="scan-btn" class="btn btn-primary btn-full">
+        🔍 Scan & Find Posts
+      </button>
+      <div id="scan-progress" class="progress-container" style="display: none">
+        <div class="progress-bar">
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+        <span class="progress-text" id="progress-text">Scanning...</span>
+      </div>
     </section>
 
     <section class="actions">
-      <button id="scan-feed-btn" class="btn btn-secondary">Scan Feed Posts</button>
       <button id="toggle-panel-btn" class="btn btn-secondary">Toggle Panel</button>
-      <button id="post-comment-btn" class="btn btn-primary">Post Test Comment</button>
+    </section>
+
+    <section class="settings-section">
+      <details>
+        <summary class="section-title">⚙ Settings</summary>
+        <div class="form-group">
+          <label for="backend-url">Backend URL</label>
+          <input type="url" id="backend-url" value="http://localhost:8000" />
+        </div>
+        <button id="save-settings-btn" class="btn btn-secondary">Save Settings</button>
+      </details>
     </section>
 
     <section class="log">
-      <div id="log-output" class="log-output">Open the LinkedIn feed, then use the buttons above.</div>
+      <div id="log-output" class="log-output">Ready. Set up your profile, then click "Scan & Find Posts".</div>
     </section>
 
     <script src="popup.js"></script>
