@@ -15,11 +15,6 @@ const progressContainer = document.getElementById("scan-progress");
 const progressFill = document.getElementById("progress-fill");
 const progressText = document.getElementById("progress-text");
 
-// Profile fields
-const topicsInput = document.getElementById("user-topics");
-const roleInput = document.getElementById("user-role");
-const goalInput = document.getElementById("user-goal");
-const avoidInput = document.getElementById("user-avoid");
 const backendUrlInput = document.getElementById("backend-url");
 
 function logLine(line) {
@@ -62,14 +57,6 @@ async function init() {
       backendText.textContent = "Backend offline — check your server";
     }
 
-    // Load profile
-    if (status?.userProfile) {
-      topicsInput.value = status.userProfile.topics || "";
-      roleInput.value = status.userProfile.role || "";
-      goalInput.value = status.userProfile.goal || "";
-      avoidInput.value = status.userProfile.avoid || "";
-    }
-
     // Load settings
     backendUrlInput.value = status?.backendUrl || "http://localhost:8000";
 
@@ -87,36 +74,23 @@ async function init() {
   }
 }
 
-// ── Auto-save profile on change ─────────────────────────────────────────────
+// ── Persist scan mode on change ─────────────────────────────────────────────
 
-let saveTimeout = null;
-function scheduleProfileSave() {
-  clearTimeout(saveTimeout);
-  saveTimeout = setTimeout(saveProfile, 800);
-}
-
-async function saveProfile() {
+async function saveScanMode() {
   try {
     await chrome.runtime.sendMessage({
       type: "SAVE_SETTINGS",
-      userTopics: topicsInput.value.trim(),
-      userRole: roleInput.value.trim(),
-      userGoal: goalInput.value.trim(),
-      userAvoid: avoidInput.value.trim(),
-      scanMode: document.querySelector('input[name="scan-mode"]:checked')
-        ?.value || "auto",
+      scanMode:
+        document.querySelector('input[name="scan-mode"]:checked')?.value ||
+        "auto",
     });
   } catch (err) {
     logLine(`save failed: ${err.message}`);
   }
 }
 
-topicsInput.addEventListener("input", scheduleProfileSave);
-roleInput.addEventListener("input", scheduleProfileSave);
-goalInput.addEventListener("input", scheduleProfileSave);
-avoidInput.addEventListener("input", scheduleProfileSave);
 document.querySelectorAll('input[name="scan-mode"]').forEach((radio) => {
-  radio.addEventListener("change", scheduleProfileSave);
+  radio.addEventListener("change", saveScanMode);
 });
 
 // ── Scan & Find Posts ───────────────────────────────────────────────────────
@@ -137,8 +111,8 @@ scanBtn.addEventListener("click", async () => {
 
   const mode = document.querySelector('input[name="scan-mode"]:checked')?.value || "auto";
 
-  // Save profile before scanning
-  await saveProfile();
+  // Persist the chosen scan mode before scanning
+  await saveScanMode();
 
   try {
     // Step 1: Start scanning (auto-scroll or manual)
@@ -166,40 +140,23 @@ scanBtn.addEventListener("click", async () => {
       type: "GET_CACHED_POSTS",
     });
     const posts = postResult?.posts || [];
-    logLine(`Captured ${posts.length} posts. Sending to AI for scoring...`);
+    const withText = posts.filter((p) => p.text && p.text.trim());
 
     if (posts.length === 0) {
       logLine("No posts found. Try scrolling the feed first.");
       return;
     }
 
-    // Step 3: Score and generate via backend
-    progressText.textContent = "AI is picking the best posts...";
-    progressFill.style.width = "80%";
+    logLine(
+      `✅ Captured ${posts.length} posts (${withText.length} with text). Open the panel to comment.`
+    );
+    progressFill.style.width = "100%";
+    progressText.textContent = `${withText.length} posts ready!`;
 
-    const scoreResult = await chrome.runtime.sendMessage({
-      type: "SCORE_AND_GENERATE",
-      posts,
-      tone: "professional",
-    });
-
-    if (scoreResult?.ok && scoreResult.recommendations?.length) {
-      const count = scoreResult.recommendations.length;
-      logLine(
-        `✅ AI picked ${count} post${count === 1 ? "" : "s"} to comment on. Check the panel!`
-      );
-      progressFill.style.width = "100%";
-      progressText.textContent = `${count} posts ready!`;
-
-      // Show the panel
-      try {
-        await chrome.tabs.sendMessage(tab.id, { type: "TOGGLE_PANEL" });
-      } catch { /* panel may already be visible */ }
-    } else {
-      logLine(
-        `AI scoring failed: ${scoreResult?.error || "no recommendations returned"}`
-      );
-    }
+    // Open the panel so the user can write + post comments.
+    try {
+      await chrome.tabs.sendMessage(tab.id, { type: "TOGGLE_PANEL" });
+    } catch { /* panel may already be visible */ }
   } catch (err) {
     logLine(`scan failed: ${err.message || err}`);
   } finally {

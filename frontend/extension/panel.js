@@ -1,16 +1,14 @@
-// Shadow DOM panel injected into LinkedIn pages (v2).
+// Shadow DOM panel injected into LinkedIn pages (v3).
 // Loaded after content.js, so window.LI_FEED is available.
 //
-// Three states:
-//   1. Idle       — waiting for user to scan
-//   2. Scanning   — auto-scroll in progress, shows progress bar
-//   3. Recommend  — shows AI-picked posts with pre-generated comments
+// Flow (no AI):
+//   1. Idle      — waiting for user to scan / scroll
+//   2. Scanning  — auto-scroll in progress, shows progress bar
+//   3. Posts     — lists captured posts; each has a text box where the user
+//                  writes their own comment and a button that posts it
+//                  directly to LinkedIn via the user's own session.
 //
-// Panel actions:
-//   - "Go & Comment" → opens post in new tab with auto-fill
-//   - "Edit" → inline edit the AI comment before filling
-//   - "Skip" → remove from recommendations
-//   - "Re-scan" → trigger new scan cycle
+// Posts are fetched entirely client-side by the network spy — no backend.
 
 const PANEL_HOST_ID = "__li_assistant_panel_host__";
 const PANEL_STORAGE_KEY = "li_assistant_panel_visible";
@@ -27,8 +25,8 @@ function panelStyles() {
       color: #1f2937;
     }
     .panel {
-      width: 360px;
-      max-height: 75vh;
+      width: 380px;
+      max-height: 78vh;
       background: #ffffff;
       border: 1px solid #e5e7eb;
       border-radius: 12px;
@@ -39,7 +37,6 @@ function panelStyles() {
     }
     .panel.hidden { display: none; }
 
-    /* Header */
     .header {
       display: flex;
       align-items: center;
@@ -56,14 +53,7 @@ function panelStyles() {
       border-radius: 999px;
       font-weight: 500;
     }
-    .badge.done-badge {
-      background: rgba(34, 197, 94, 0.3);
-    }
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
+    .header-right { display: flex; align-items: center; gap: 8px; }
     .close-btn {
       flex: 0 0 auto;
       background: transparent;
@@ -77,7 +67,6 @@ function panelStyles() {
     }
     .close-btn:hover { opacity: 1; }
 
-    /* Actions bar */
     .actions-bar {
       display: flex;
       gap: 6px;
@@ -104,19 +93,10 @@ function panelStyles() {
       font-weight: 600;
     }
     button.primary:hover { background: #084d94; }
-    button.success {
-      background: #22c55e;
-      color: #ffffff;
-      border-color: #22c55e;
-    }
+    button.success { background: #22c55e; color: #ffffff; border-color: #22c55e; }
 
-    /* Content / list */
-    .content {
-      overflow-y: auto;
-      flex: 1;
-    }
+    .content { overflow-y: auto; flex: 1; }
 
-    /* Idle state */
     .state-idle {
       padding: 32px 14px;
       text-align: center;
@@ -126,17 +106,9 @@ function panelStyles() {
     }
     .state-idle .emoji { font-size: 28px; margin-bottom: 8px; }
 
-    /* Scanning state */
-    .state-scanning {
-      padding: 32px 14px;
-      text-align: center;
-    }
+    .state-scanning { padding: 32px 14px; text-align: center; }
     .state-scanning .emoji { font-size: 28px; margin-bottom: 8px; }
-    .scan-label {
-      font-size: 13px;
-      color: #6b7280;
-      margin-bottom: 12px;
-    }
+    .scan-label { font-size: 13px; color: #6b7280; margin-bottom: 12px; }
     .progress-bar {
       width: 100%;
       height: 6px;
@@ -152,93 +124,39 @@ function panelStyles() {
       transition: width 0.3s ease;
       width: 0%;
     }
-    .scan-count {
-      font-size: 12px;
-      color: #9ca3af;
-    }
+    .scan-count { font-size: 12px; color: #9ca3af; }
 
-    /* Recommendation row */
-    .rec-row {
+    .post-row {
       padding: 12px 14px;
       border-bottom: 1px solid #f3f4f6;
-      transition: background 0.1s;
     }
-    .rec-row:last-child { border-bottom: none; }
-    .rec-row.done { opacity: 0.5; background: #f9fafb; }
+    .post-row:last-child { border-bottom: none; }
+    .post-row.done { opacity: 0.55; background: #f9fafb; }
 
-    .rec-meta {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      margin-bottom: 4px;
-    }
-    .score {
-      font-size: 11px;
-      font-weight: 700;
-      color: #0a66c2;
-      background: #eff6ff;
-      padding: 1px 6px;
-      border-radius: 4px;
-    }
-    .score.high { color: #15803d; background: #f0fdf4; }
-    .reason {
+    .post-author { font-weight: 600; font-size: 12px; color: #111827; }
+    .post-headline {
       font-size: 10px;
       color: #9ca3af;
-      flex: 1;
+      margin-bottom: 4px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .done-label {
-      font-size: 10px;
-      color: #22c55e;
-      font-weight: 600;
-    }
-
-    .rec-author {
-      font-weight: 600;
-      font-size: 12px;
-      color: #111827;
-      margin-bottom: 2px;
-    }
-    .rec-text {
+    .post-text {
       font-size: 12px;
       color: #6b7280;
       line-height: 1.4;
       display: -webkit-box;
-      -webkit-line-clamp: 2;
+      -webkit-line-clamp: 3;
       -webkit-box-orient: vertical;
       overflow: hidden;
       margin-bottom: 8px;
     }
+    .no-text { font-style: italic; color: #c0c4cc; }
 
-    /* Comment preview */
-    .comment-preview {
-      background: #f0f9ff;
-      border: 1px solid #bfdbfe;
-      border-radius: 6px;
-      padding: 8px 10px;
-      margin-bottom: 8px;
-    }
-    .comment-label {
-      font-size: 10px;
-      color: #3b82f6;
-      font-weight: 600;
-      margin-bottom: 4px;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-    .comment-text {
-      font-size: 12px;
-      color: #1e40af;
-      line-height: 1.4;
-    }
-
-    /* Edit textarea */
     .comment-edit {
       width: 100%;
-      min-height: 60px;
+      min-height: 54px;
       padding: 8px;
       border: 1px solid #93c5fd;
       border-radius: 6px;
@@ -246,7 +164,7 @@ function panelStyles() {
       font-family: inherit;
       line-height: 1.4;
       resize: vertical;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
       box-sizing: border-box;
     }
     .comment-edit:focus {
@@ -255,18 +173,11 @@ function panelStyles() {
       box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
     }
 
-    /* Row actions */
-    .rec-actions {
-      display: flex;
-      gap: 6px;
-    }
-    .rec-actions button {
-      flex: 0 0 auto;
-      padding: 4px 10px;
-      font-size: 11px;
-    }
+    .post-actions { display: flex; align-items: center; gap: 8px; }
+    .post-status { font-size: 11px; color: #9ca3af; flex: 1; }
+    .post-status.ok { color: #16a34a; }
+    .post-status.err { color: #dc2626; }
 
-    /* Toggle tab */
     .toggle-tab {
       position: absolute;
       top: 0;
@@ -303,109 +214,67 @@ function buildPanelTree(shadow) {
         </div>
       </div>
       <div class="actions-bar">
-        <button data-action="rescan">Re-scan</button>
-        <button class="primary" data-action="scan-and-score">🔍 Scan & Score</button>
+        <button data-action="refresh">↻ Refresh</button>
+        <button class="primary" data-action="scan">🔍 Scan Feed</button>
       </div>
       <div class="content" data-role="content">
         <div class="state-idle">
           <div class="emoji">🎯</div>
-          <p>Click <strong>Scan & Score</strong> to find the best posts to comment on.</p>
-          <p style="font-size: 11px; margin-top: 8px;">Or scroll your feed — posts are captured automatically.</p>
+          <p>Click <strong>Scan Feed</strong> to pull in posts, then write and post your comment on each.</p>
+          <p style="font-size: 11px; margin-top: 8px;">Or just scroll your feed — posts are captured automatically. Hit <strong>Refresh</strong>.</p>
         </div>
       </div>
     </div>
   `;
 }
 
-// ── Render Recommendations ──────────────────────────────────────────────────
+// ── Render captured posts ─────────────────────────────────────────────────
 
-function renderRecommendations(contentEl, recommendations) {
-  if (!recommendations || !recommendations.length) {
+function renderPosts(contentEl, posts) {
+  const withText = posts.filter((p) => p.text && p.text.trim());
+
+  if (!withText.length) {
     contentEl.innerHTML = `
       <div class="state-idle">
         <div class="emoji">🤔</div>
-        <p>No posts scored yet. Try scanning again or scroll more of your feed.</p>
-      </div>
-    `;
+        <p>No posts with readable text captured yet. Scroll your feed a bit, then hit Refresh.</p>
+      </div>`;
     return;
   }
 
-  const html = recommendations
-    .map((rec) => {
-      const urn = escapeAttr(rec.urn || "");
-      const author = escapeHtml(rec.author || "Unknown");
-      const textPreview = escapeHtml(rec.text_preview || rec.textPreview || "(no text)");
-      const comment = escapeHtml(rec.comment || "");
-      const score = rec.score || 0;
-      const reason = escapeHtml(rec.reason || "");
-      const isDone = rec.done === true;
-      const scoreClass = score >= 8 ? "high" : "";
-
+  contentEl.innerHTML = withText
+    .map((p) => {
+      const urn = escapeAttr(p.postId || "");
+      const author = escapeHtml(p.author || "Unknown");
+      const headline = escapeHtml(p.headline || "");
+      const text = escapeHtml((p.text || "").slice(0, 300));
       return `
-        <div class="rec-row ${isDone ? "done" : ""}" data-urn="${urn}">
-          <div class="rec-meta">
-            <span class="score ${scoreClass}">★ ${score}/10</span>
-            <span class="reason">${reason}</span>
-            ${isDone ? '<span class="done-label">✓ Done</span>' : ""}
+        <div class="post-row" data-urn="${urn}">
+          <div class="post-author">${author}</div>
+          ${headline ? `<div class="post-headline">${headline}</div>` : ""}
+          <div class="post-text">${text}</div>
+          <textarea class="comment-edit" data-role="comment" placeholder="Write your comment…"></textarea>
+          <div class="post-actions">
+            <span class="post-status" data-role="status"></span>
+            <button class="primary" data-action="post-comment" data-urn="${urn}">Post to LinkedIn</button>
           </div>
-          <div class="rec-author">${author}</div>
-          <div class="rec-text">${textPreview}</div>
-          <div class="comment-preview" data-role="comment-preview">
-            <div class="comment-label">💬 AI Comment</div>
-            <div class="comment-text">${comment}</div>
-          </div>
-          <div class="rec-actions">
-            ${
-              isDone
-                ? ""
-                : `
-              <button data-action="edit" data-urn="${urn}">✏ Edit</button>
-              <button class="primary" data-action="go-comment" data-urn="${urn}" data-comment="${escapeAttr(rec.comment || "")}">
-                Go & Comment ▶
-              </button>
-              <button data-action="skip" data-urn="${urn}">Skip</button>
-            `
-            }
-          </div>
-        </div>
-      `;
+        </div>`;
     })
     .join("");
-
-  contentEl.innerHTML = html;
 }
 
 function renderScanning(contentEl, postCount, progress) {
-  const pct = progress
-    ? Math.round((progress.current / progress.total) * 100)
-    : 0;
-
+  const pct = progress ? Math.round((progress.current / progress.total) * 100) : 0;
   contentEl.innerHTML = `
     <div class="state-scanning">
       <div class="emoji">🔍</div>
-      <div class="scan-label">Scanning your feed...</div>
-      <div class="progress-bar">
-        <div class="progress-fill" style="width: ${pct}%"></div>
-      </div>
+      <div class="scan-label">Scanning your feed…</div>
+      <div class="progress-bar"><div class="progress-fill" style="width: ${pct}%"></div></div>
       <div class="scan-count">${postCount} posts captured</div>
-    </div>
-  `;
+    </div>`;
 }
 
-function renderAnalyzing(contentEl, postCount) {
-  contentEl.innerHTML = `
-    <div class="state-scanning">
-      <div class="emoji">🧠</div>
-      <div class="scan-label">AI is scoring ${postCount} posts...</div>
-      <div class="progress-bar">
-        <div class="progress-fill" style="width: 60%; animation: pulse 1.5s infinite;"></div>
-      </div>
-      <div class="scan-count">Finding the best posts to comment on</div>
-    </div>
-  `;
-}
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── Helpers ────────────────────────────────────────────────────────────────
 
 function escapeHtml(s) {
   return String(s)
@@ -418,16 +287,6 @@ function escapeHtml(s) {
 
 function escapeAttr(s) {
   return escapeHtml(s);
-}
-
-function flashStatus(btn, msg) {
-  const original = btn.textContent;
-  btn.textContent = msg;
-  btn.disabled = true;
-  setTimeout(() => {
-    btn.textContent = original;
-    btn.disabled = false;
-  }, 1500);
 }
 
 // ── Create & Wire Panel ─────────────────────────────────────────────────────
@@ -448,309 +307,169 @@ function createPanel() {
   const countEl = shadow.querySelector('[data-role="count"]');
   const contentEl = shadow.querySelector('[data-role="content"]');
 
-  let currentState = "idle"; // idle | scanning | analyzing | recommendations
-  let currentRecommendations = [];
-  let scanProgress = null;
+  let currentState = "idle"; // idle | scanning | posts
 
-  // ── State machine ───────────────────────────────────────────────────────
+  function postCount() {
+    return window.LI_FEED?.getCachedPosts?.()?.length || 0;
+  }
 
   function setState(state, data) {
     currentState = state;
-    const postCount = window.LI_FEED?.getCachedPosts?.()?.length || 0;
-
     switch (state) {
       case "idle":
-        countEl.textContent = `${postCount} posts`;
+        countEl.textContent = `${postCount()} posts`;
         contentEl.innerHTML = `
           <div class="state-idle">
             <div class="emoji">🎯</div>
-            <p>Click <strong>Scan & Score</strong> to find the best posts to comment on.</p>
+            <p>Click <strong>Scan Feed</strong> to pull in posts, then write and post your comment on each.</p>
           </div>`;
         break;
-
       case "scanning":
-        countEl.textContent = `${postCount} captured`;
-        renderScanning(contentEl, postCount, data);
+        countEl.textContent = `${postCount()} captured`;
+        renderScanning(contentEl, postCount(), data);
         break;
-
-      case "analyzing":
-        countEl.textContent = "Analyzing...";
-        renderAnalyzing(contentEl, postCount);
+      case "posts": {
+        const posts = data || window.LI_FEED?.getCachedPosts?.() || [];
+        const withText = posts.filter((p) => p.text && p.text.trim());
+        countEl.textContent = `${withText.length} posts`;
+        renderPosts(contentEl, posts);
         break;
-
-      case "recommendations":
-        currentRecommendations = data || [];
-        const doneCount = currentRecommendations.filter((r) => r.done).length;
-        const total = currentRecommendations.length;
-        countEl.textContent = `${total} picks · ${doneCount} done`;
-        renderRecommendations(contentEl, currentRecommendations);
-        break;
-    }
-  }
-
-  // ── Load saved recommendations ────────────────────────────────────────
-
-  async function loadRecommendations() {
-    try {
-      const result = await chrome.runtime.sendMessage({
-        type: "GET_RECOMMENDATIONS",
-      });
-      if (result?.recommendations?.length) {
-        setState("recommendations", result.recommendations);
       }
-    } catch {
-      /* ignore */
     }
   }
 
-  // ── Scan & Score flow ─────────────────────────────────────────────────
+  // Show whatever's already captured (posts accumulate as the user scrolls).
+  function showCapturedPosts() {
+    setState("posts", window.LI_FEED?.getCachedPosts?.() || []);
+  }
 
-  async function scanAndScore() {
+  // ── Scan flow (auto-scroll to capture, then list) ─────────────────────
+  async function scanFeed() {
     setState("scanning", { current: 0, total: 10 });
-
-    // Start auto-scroll
     window.LI_FEED?.startAutoScroll?.(10);
 
-    // Wait for scroll to complete (listen for events)
     await new Promise((resolve) => {
       let resolved = false;
-      const timeout = setTimeout(() => {
-        if (!resolved) {
-          resolved = true;
-          resolve();
-        }
-      }, 30000); // 30s max
-
+      const done = () => {
+        if (resolved) return;
+        resolved = true;
+        if (unsubscribe) unsubscribe();
+        clearTimeout(timeout);
+        resolve();
+      };
+      const timeout = setTimeout(done, 30000);
       const unsubscribe = window.LI_FEED?.onPostsChanged?.((delta) => {
-        const postCount =
-          window.LI_FEED?.getCachedPosts?.()?.length || 0;
-
         if (delta.scrollProgress !== undefined) {
           setState("scanning", {
             current: delta.scrollProgress,
             total: delta.scrollTotal || 10,
           });
         }
-
-        if (delta.scrollComplete || postCount >= 90) {
-          clearTimeout(timeout);
-          if (!resolved) {
-            resolved = true;
-            if (unsubscribe) unsubscribe();
-            resolve();
-          }
-        }
+        if (delta.scrollComplete || postCount() >= 90) done();
       });
     });
 
-    // Get all captured posts
-    const posts = window.LI_FEED?.getCachedPosts?.() || [];
-
-    if (posts.length === 0) {
-      setState("idle");
-      return;
-    }
-
-    // Send to AI for scoring
-    setState("analyzing");
-
-    try {
-      const result = await chrome.runtime.sendMessage({
-        type: "SCORE_AND_GENERATE",
-        posts,
-        tone: "professional",
-      });
-
-      if (result?.ok && result.recommendations?.length) {
-        setState("recommendations", result.recommendations);
-      } else {
-        setState("idle");
-      }
-    } catch (err) {
-      console.error("[LinkedIn Assistant] scoring failed:", err);
-      setState("idle");
-    }
+    showCapturedPosts();
   }
 
   // ── Event delegation ──────────────────────────────────────────────────
-
   shadow.addEventListener("click", async (e) => {
     const btn = e.target.closest("[data-action]");
     if (!btn) return;
     const action = btn.dataset.action;
     const urn = btn.dataset.urn;
 
-    if (action === "toggle") {
-      setVisible(!isVisible());
-      return;
-    }
-    if (action === "close") {
-      setVisible(false);
-      return;
-    }
+    if (action === "toggle") { setVisible(!isVisible()); return; }
+    if (action === "close") { setVisible(false); return; }
+    if (action === "scan") { scanFeed(); return; }
+    if (action === "refresh") { showCapturedPosts(); return; }
 
-    if (action === "rescan" || action === "scan-and-score") {
-      scanAndScore();
-      return;
-    }
+    if (action === "post-comment" && urn) {
+      const row = btn.closest(".post-row");
+      const textarea = row?.querySelector('[data-role="comment"]');
+      const statusEl = row?.querySelector('[data-role="status"]');
+      const text = (textarea?.value || "").trim();
 
-    if (action === "go-comment" && urn) {
-      const comment = btn.dataset.comment || "";
+      if (!text) {
+        if (statusEl) {
+          statusEl.textContent = "Write a comment first";
+          statusEl.className = "post-status err";
+        }
+        return;
+      }
+
       btn.disabled = true;
-      btn.textContent = "Opening...";
+      btn.textContent = "Posting…";
+      if (statusEl) { statusEl.textContent = ""; statusEl.className = "post-status"; }
 
       try {
-        await chrome.runtime.sendMessage({
-          type: "GO_TO_POST",
-          urn,
-          commentText: comment,
-        });
-
-        // Mark as done after a brief delay
-        setTimeout(async () => {
-          await chrome.runtime.sendMessage({
-            type: "MARK_POST_DONE",
-            urn,
-          });
-          // Refresh recommendations
-          const result = await chrome.runtime.sendMessage({
-            type: "GET_RECOMMENDATIONS",
-          });
-          if (result?.recommendations) {
-            setState("recommendations", result.recommendations);
+        const result = await window.LI_FEED?.submitCommentViaApi?.(urn, text);
+        if (result?.ok) {
+          btn.textContent = "✓ Posted";
+          btn.classList.add("success");
+          if (textarea) textarea.disabled = true;
+          if (statusEl) {
+            statusEl.textContent = "Comment posted";
+            statusEl.className = "post-status ok";
           }
-        }, 2000);
+          row.classList.add("done");
+        } else {
+          console.warn("[LinkedIn Assistant] post failed:", result);
+          btn.disabled = false;
+          btn.textContent = "Post to LinkedIn";
+          if (statusEl) {
+            statusEl.textContent =
+              result?.error === "no_csrf_token"
+                ? "Scroll the feed once, then retry"
+                : "Failed — see console";
+            statusEl.className = "post-status err";
+          }
+        }
       } catch (err) {
-        flashStatus(btn, "Failed");
+        console.error("[LinkedIn Assistant] post error:", err);
+        btn.disabled = false;
+        btn.textContent = "Post to LinkedIn";
+        if (statusEl) {
+          statusEl.textContent = "Error — see console";
+          statusEl.className = "post-status err";
+        }
       }
-      return;
-    }
-
-    if (action === "edit" && urn) {
-      // Toggle between preview and edit mode
-      const row = btn.closest(".rec-row");
-      const preview = row.querySelector('[data-role="comment-preview"]');
-      if (!preview) return;
-
-      const currentText = preview.querySelector(".comment-text")?.textContent || "";
-
-      if (btn.textContent.includes("Edit")) {
-        // Switch to edit mode
-        preview.innerHTML = `
-          <div class="comment-label">💬 Edit Comment</div>
-          <textarea class="comment-edit" data-role="edit-area">${escapeHtml(currentText)}</textarea>
-          <div style="display: flex; gap: 6px;">
-            <button data-action="save-edit" data-urn="${escapeAttr(urn)}" class="primary" style="flex:1">Save</button>
-            <button data-action="cancel-edit" data-urn="${escapeAttr(urn)}" style="flex:1">Cancel</button>
-          </div>
-        `;
-        btn.textContent = "✏ Editing...";
-        btn.disabled = true;
-      }
-      return;
-    }
-
-    if (action === "save-edit" && urn) {
-      const row = btn.closest(".rec-row");
-      const textarea = row.querySelector('[data-role="edit-area"]');
-      const newText = textarea?.value?.trim() || "";
-
-      if (newText) {
-        // Update the recommendation in storage
-        const result = await chrome.runtime.sendMessage({
-          type: "GET_RECOMMENDATIONS",
-        });
-        const recs = result?.recommendations || [];
-        const updated = recs.map((r) =>
-          r.urn === urn ? { ...r, comment: newText } : r
-        );
-        await chrome.storage.session.set({ recommendations: updated });
-        setState("recommendations", updated);
-      }
-      return;
-    }
-
-    if (action === "cancel-edit" && urn) {
-      // Re-render to restore preview mode
-      const result = await chrome.runtime.sendMessage({
-        type: "GET_RECOMMENDATIONS",
-      });
-      if (result?.recommendations) {
-        setState("recommendations", result.recommendations);
-      }
-      return;
-    }
-
-    if (action === "skip" && urn) {
-      // Remove from recommendations
-      const result = await chrome.runtime.sendMessage({
-        type: "GET_RECOMMENDATIONS",
-      });
-      const recs = (result?.recommendations || []).filter(
-        (r) => r.urn !== urn
-      );
-      await chrome.storage.session.set({ recommendations: recs });
-      setState("recommendations", recs);
       return;
     }
   });
 
   // ── Visibility ────────────────────────────────────────────────────────
-
   function setVisible(visible) {
     panelEl.classList.toggle("hidden", !visible);
-    try {
-      localStorage.setItem(PANEL_STORAGE_KEY, visible ? "1" : "0");
-    } catch {
-      /* ignore */
-    }
+    try { localStorage.setItem(PANEL_STORAGE_KEY, visible ? "1" : "0"); } catch {}
   }
+  function isVisible() { return !panelEl.classList.contains("hidden"); }
 
-  function isVisible() {
-    return !panelEl.classList.contains("hidden");
-  }
-
-  // Subscribe to feed updates — keep post count badge current
-  window.LI_FEED?.onPostsChanged?.((delta) => {
+  // Keep the count badge current while idle/scanning (don't clobber typed text
+  // while the user is on the posts list).
+  window.LI_FEED?.onPostsChanged?.(() => {
     if (currentState === "idle" || currentState === "scanning") {
-      const postCount =
-        window.LI_FEED?.getCachedPosts?.()?.length || 0;
-      countEl.textContent = `${postCount} posts`;
+      countEl.textContent = `${postCount()} posts`;
     }
   });
 
-  // Restore last visibility (default = visible)
   let initialVisible = true;
   try {
-    const stored = localStorage.getItem(PANEL_STORAGE_KEY);
-    if (stored === "0") initialVisible = false;
-  } catch {
-    /* ignore */
-  }
+    if (localStorage.getItem(PANEL_STORAGE_KEY) === "0") initialVisible = false;
+  } catch {}
   setVisible(initialVisible);
 
-  // Load any existing recommendations
-  loadRecommendations();
+  // If posts were already captured before the panel opened, show them.
+  if (postCount() > 0) showCapturedPosts();
 
-  // Expose toggle for popup/content script
   window.LI_PANEL = {
-    toggle: () => {
-      setVisible(!isVisible());
-      return isVisible();
-    },
-    show: () => {
-      setVisible(true);
-      return true;
-    },
-    hide: () => {
-      setVisible(false);
-      return false;
-    },
-    refresh: loadRecommendations,
+    toggle: () => { setVisible(!isVisible()); return isVisible(); },
+    show: () => { setVisible(true); return true; },
+    hide: () => { setVisible(false); return false; },
+    refresh: showCapturedPosts,
   };
 }
 
-// Wait for body before injecting.
 if (document.body) {
   createPanel();
 } else {

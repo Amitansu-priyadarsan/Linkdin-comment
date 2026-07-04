@@ -47,6 +47,19 @@
     return POST_PATTERNS.some((p) => url.includes(p));
   }
 
+  // A comment-creation request is a POST to the socialActions/comments
+  // endpoint (or the legacy feed/comments). We watch for these so we can
+  // LEARN the exact URL + headers LinkedIn uses, then replay them.
+  function isCommentCreateUrl(url, method) {
+    if (!url || typeof url !== 'string') return false;
+    if ((method || '').toUpperCase() !== 'POST') return false;
+    const u = url.toLowerCase();
+    return (
+      (u.includes('/socialactions/') && u.includes('/comments')) ||
+      u.includes('/voyager/api/feed/comments')
+    );
+  }
+
   // ── Parse different response formats ──────────────────────────────────────
 
   /**
@@ -313,7 +326,8 @@
 
     // Capture csrf-token from outgoing request
     try {
-      const initObj = typeof args[0] === 'string' ? args[1] : undefined;
+      const initObj = typeof args[0] === 'string' ? args[1] : (args[1] || args[0]);
+      const method = initObj?.method || (typeof args[0] === 'object' ? args[0]?.method : 'GET');
       const headers = initObj?.headers || (args[0]?.headers);
 
       if (headers) {
@@ -325,11 +339,17 @@
         }
 
         if (csrf) {
+          setCsrf(csrf);
           window.postMessage(
             { type: 'LINKEDIN_AUTH_CAPTURED', csrfToken: csrf },
             '*'
           );
         }
+      }
+
+      // Learn the exact shape of comment requests LinkedIn makes, for replay.
+      if (isCommentCreateUrl(url, method)) {
+        learnCommentRecipe(url, headers);
       }
     } catch (_) {
       /* swallow — non-critical */
@@ -354,11 +374,15 @@
 
   XMLHttpRequest.prototype.open = function (method, url) {
     this._url = url;
+    this._method = method;
+    this._headers = {};
     return origOpen.apply(this, arguments);
   };
 
   XMLHttpRequest.prototype.setRequestHeader = function (name, value) {
+    if (this._headers) this._headers[name.toLowerCase()] = value;
     if (name.toLowerCase() === 'csrf-token' && value) {
+      setCsrf(value);
       window.postMessage(
         { type: 'LINKEDIN_AUTH_CAPTURED', csrfToken: value },
         '*'
@@ -369,6 +393,12 @@
 
   XMLHttpRequest.prototype.send = function () {
     const self = this;
+
+    // Learn comment-request shape when LinkedIn posts a comment via XHR.
+    if (self._url && isCommentCreateUrl(self._url, self._method)) {
+      learnCommentRecipe(self._url, self._headers);
+    }
+
     if (self._url && (isFeedUrl(self._url) || isPostRelatedUrl(self._url))) {
       self.addEventListener('load', function () {
         try {
@@ -398,6 +428,191 @@
     }
     return origSend.apply(this, arguments);
   };
+
+  // ── Comment Posting (Direct API — same-origin, user's own session) ─────────
+  //
+  // Posts a comment by calling LinkedIn's own Voyager endpoint from the page's
+  // MAIN world. Because this runs in the page context on www.linkedin.com:
+  //   - the li_at / JSESSIONID cookies are attached automatically (credentials)
+  //   - the request shares LinkedIn's origin, TLS fingerprint, and headers
+  // so it is indistinguishable from the user commenting in the LinkedIn UI.
+  //
+  // Robustness strategy:
+  //   1. LEARN — whenever LinkedIn itself fires a comment request, we capture
+  //      its URL template + headers into `learnedRecipe`. Replaying that exact
+  //      shape survives LinkedIn's periodic endpoint/header changes.
+  //   2. FALLBACK — if we've never seen one, use the well-known socialActions
+  //      endpoint and try a few known body shapes until one is accepted.
+
+  let capturedCsrf = null;
+  let learnedRecipe = null; // { urlTemplate, headers }
+
+  function setCsrf(token) {
+    if (token) capturedCsrf = token;
+  }
+
+  // The csrf-token header value equals the JSESSIONID cookie value with the
+  // surrounding double-quotes stripped (e.g. cookie "ajax:123" → header ajax:123).
+  function getCsrfToken() {
+    if (capturedCsrf) return capturedCsrf;
+    const m = document.cookie.match(/JSESSIONID="?([^";]+)"?/);
+    return m ? m[1] : null;
+  }
+
+  const RAW_URN_RE = /urn:li:activity:\d+/;
+  const ENC_URN_RE = /urn%3Ali%3Aactivity%3A\d+/i;
+
+  // Turn a concrete comment URL into a template with the activity URN swapped
+  // for a {URN} placeholder, so we can substitute the target post later.
+  function toUrlTemplate(url) {
+    if (ENC_URN_RE.test(url)) return url.replace(ENC_URN_RE, '{URN}');
+    if (RAW_URN_RE.test(url)) return url.replace(RAW_URN_RE, '{URN}');
+    return url;
+  }
+
+  // Capture the shape of a comment request LinkedIn made, for later replay.
+  function learnCommentRecipe(url, headers) {
+    try {
+      const urlTemplate = toUrlTemplate(url);
+      // Only keep the headers that matter for a Voyager write.
+      const keep = [
+        'accept',
+        'content-type',
+        'csrf-token',
+        'x-restli-protocol-version',
+        'x-li-lang',
+        'x-li-track',
+        'x-li-page-instance',
+      ];
+      const flat = {};
+      const read = (name) => {
+        if (!headers) return null;
+        if (headers instanceof Headers) return headers.get(name);
+        if (typeof headers === 'object') {
+          return headers[name] ?? headers[name.toLowerCase()] ?? null;
+        }
+        return null;
+      };
+      for (const name of keep) {
+        const v = read(name);
+        if (v) flat[name] = v;
+      }
+      if (flat['csrf-token']) setCsrf(flat['csrf-token']);
+      learnedRecipe = { urlTemplate, headers: flat };
+      console.log(`${SPY_LOG} Learned comment recipe from ${urlTemplate}`);
+      window.postMessage(
+        { type: 'LINKEDIN_COMMENT_RECIPE_LEARNED', urlTemplate },
+        '*'
+      );
+    } catch (_) {
+      /* non-critical */
+    }
+  }
+
+  // Body shapes to try, in order. LinkedIn has used all of these across
+  // versions; the learned recipe usually makes shape #1 land first try.
+  function commentBodyShapes(text) {
+    return [
+      { commentary: { text: text, attributes: [] } },
+      { comment: { text: { text: text, attributes: [] } } },
+      { message: { text: text, attributes: [] } },
+    ];
+  }
+
+  function defaultHeaders(token) {
+    return {
+      accept: 'application/vnd.linkedin.normalized+json+2.1',
+      'content-type': 'application/json; charset=UTF-8',
+      'csrf-token': token,
+      'x-restli-protocol-version': '2.0.0',
+      'x-li-lang': 'en_US',
+    };
+  }
+
+  async function submitComment(urn, text) {
+    if (!urn) return { ok: false, error: 'missing_urn' };
+    if (!text || !text.trim()) return { ok: false, error: 'empty_text' };
+
+    const token = getCsrfToken();
+    if (!token) {
+      return {
+        ok: false,
+        error: 'no_csrf_token',
+        hint: 'Scroll the feed once so a csrf-token is captured, then retry.',
+      };
+    }
+
+    const encUrn = encodeURIComponent(urn);
+
+    // Build the ordered list of (url, headers) targets to try.
+    const targets = [];
+    if (learnedRecipe) {
+      const headers = { ...learnedRecipe.headers, 'csrf-token': token };
+      targets.push({
+        url: learnedRecipe.urlTemplate.replace('{URN}', encUrn),
+        headers,
+        label: 'learned',
+      });
+    }
+    // Well-known fallback endpoint.
+    targets.push({
+      url: `https://www.linkedin.com/voyager/api/socialActions/${encUrn}/comments`,
+      headers: defaultHeaders(token),
+      label: 'default-socialActions',
+    });
+
+    const shapes = commentBodyShapes(text.trim());
+    const attempts = [];
+
+    for (const target of targets) {
+      for (let i = 0; i < shapes.length; i++) {
+        try {
+          const res = await originalFetch(target.url, {
+            method: 'POST',
+            credentials: 'include',
+            headers: target.headers,
+            body: JSON.stringify(shapes[i]),
+          });
+
+          const status = res.status;
+          if (status >= 200 && status < 300) {
+            return {
+              ok: true,
+              status,
+              via: target.label,
+              bodyShape: i,
+              urn,
+            };
+          }
+
+          const errText = await res.text().catch(() => '');
+          attempts.push({ via: target.label, bodyShape: i, status, errText: errText.slice(0, 200) });
+
+          // Auth failures won't be fixed by a different body shape — bail early.
+          if (status === 401 || status === 403) break;
+        } catch (err) {
+          attempts.push({ via: target.label, bodyShape: i, error: String(err) });
+        }
+      }
+    }
+
+    return { ok: false, error: 'all_attempts_failed', urn, attempts };
+  }
+
+  // ── Comment message bridge (ISOLATED world → MAIN → back) ──────────────────
+
+  window.addEventListener('message', (event) => {
+    if (event.source !== window || !event.data) return;
+    if (event.data.type !== 'LINKEDIN_SUBMIT_COMMENT') return;
+
+    const { requestId, urn, text } = event.data;
+    submitComment(urn, text).then((result) => {
+      window.postMessage(
+        { type: 'LINKEDIN_SUBMIT_COMMENT_RESULT', requestId, result },
+        '*'
+      );
+    });
+  });
 
   // ── Auto-Scroller ──────────────────────────────────────────────────────────
 

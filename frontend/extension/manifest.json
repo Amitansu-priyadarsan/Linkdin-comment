@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "LinkedIn Comment Assistant",
-  "version": "0.2.0",
-  "description": "AI scans your feed, picks the best posts, writes comments in your voice. You review and post.",
+  "version": "0.3.0",
+  "description": "Fetch your feed posts, write your own comment on each, and post it to LinkedIn from the panel.",
   "permissions": [
     "activeTab",
     "scripting",

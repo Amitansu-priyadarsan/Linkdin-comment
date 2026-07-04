@@ -24,6 +24,33 @@ const listeners = new Set();
 // Captured auth metadata from the network spy (for display/status only)
 let capturedCsrfToken = null;
 
+// In-flight direct-comment posts, keyed by requestId. The MAIN-world spy does
+// the actual network call (it holds the csrf-token + page origin) and posts a
+// LINKEDIN_SUBMIT_COMMENT_RESULT back, which resolves the matching promise.
+const pendingCommentPosts = new Map();
+let commentRequestSeq = 0;
+
+// Post a comment directly via LinkedIn's own API, using the user's live
+// session. Returns { ok, status, via, ... } or { ok:false, error, ... }.
+function submitCommentViaApi(urn, text, timeoutMs = 15000) {
+  return new Promise((resolve) => {
+    const requestId = `cmt_${Date.now()}_${++commentRequestSeq}`;
+    pendingCommentPosts.set(requestId, { resolve });
+
+    window.postMessage(
+      { type: "LINKEDIN_SUBMIT_COMMENT", requestId, urn, text },
+      "*"
+    );
+
+    setTimeout(() => {
+      if (pendingCommentPosts.has(requestId)) {
+        pendingCommentPosts.delete(requestId);
+        resolve({ ok: false, error: "timeout" });
+      }
+    }, timeoutMs);
+  });
+}
+
 // ── Network Spy Listener (PRIMARY post source) ─────────────────────────────
 // The MAIN-world linkedinNetworkSpy.js sends structured post data as JSON
 // from intercepted Voyager API responses.  Zero DOM dependency.
@@ -69,6 +96,15 @@ window.addEventListener("message", (event) => {
   if (event.data.type === "LINKEDIN_AUTH_CAPTURED") {
     capturedCsrfToken = event.data.csrfToken;
     console.log(`${LOG_PREFIX} CSRF token captured from network`);
+  }
+
+  // A comment-post request finished in the MAIN world — resolve its promise.
+  if (event.data.type === "LINKEDIN_SUBMIT_COMMENT_RESULT") {
+    const pending = pendingCommentPosts.get(event.data.requestId);
+    if (pending) {
+      pendingCommentPosts.delete(event.data.requestId);
+      pending.resolve(event.data.result);
+    }
   }
 
   // Auto-scroll progress
@@ -321,50 +357,6 @@ function stopAutoScroll() {
   window.postMessage({ type: "STOP_AUTO_SCROLL" }, "*");
 }
 
-// ── Auto-Fill on Direct Post Pages ──────────────────────────────────────────
-// When the user clicks "Go & Comment", we navigate to the post's URL.
-// On page load, check if there's a pending comment to auto-fill.
-
-async function checkPendingComment() {
-  if (!location.pathname.startsWith("/feed/update/")) return;
-
-  try {
-    const result = await chrome.storage.session.get("pendingComment");
-    const pending = result?.pendingComment;
-    if (!pending || !pending.text) return;
-
-    // Check if this page matches the pending post URN
-    const currentUrl = location.href;
-    const urnMatch = pending.urn && currentUrl.includes(
-      pending.urn.replace("urn:li:activity:", "")
-    );
-
-    if (!urnMatch && pending.urn) return; // wrong post page
-
-    console.log(`${LOG_PREFIX} Pending comment found — auto-filling...`);
-
-    // Wait for the page to fully render
-    await new Promise((resolve) => setTimeout(resolve, 2500));
-
-    const result2 = await fillCommentForPost(null, pending.text);
-    if (result2.ok) {
-      console.log(`${LOG_PREFIX} Auto-fill successful!`);
-      // Clear the pending comment
-      await chrome.storage.session.remove("pendingComment");
-      // Notify the background that fill was successful
-      chrome.runtime.sendMessage({
-        type: "AUTO_FILL_COMPLETE",
-        urn: pending.urn,
-        success: true,
-      });
-    } else {
-      console.warn(`${LOG_PREFIX} Auto-fill failed: ${result2.reason}`);
-    }
-  } catch (err) {
-    console.error(`${LOG_PREFIX} checkPendingComment error:`, err);
-  }
-}
-
 // ── MutationObserver (DOM fallback scanner) ──────────────────────────────────
 
 // Throttle scans triggered by the feed-wide MutationObserver. LinkedIn fires
@@ -415,6 +407,15 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
 
+  // Post a comment directly via LinkedIn's API (no navigation, no manual
+  // click). Works from any LinkedIn page using the user's own session.
+  if (message?.type === "POST_COMMENT_DIRECT") {
+    submitCommentViaApi(message.urn, message.text)
+      .then((result) => sendResponse(result))
+      .catch((err) => sendResponse({ ok: false, error: String(err) }));
+    return true; // async response
+  }
+
   if (message?.type === "HIGHLIGHT_POST") {
     sendResponse({ ok: highlightPost(message.urn) });
     return false;
@@ -461,6 +462,7 @@ window.LI_FEED = {
   scanFeedNow,
   getCachedPosts,
   fillCommentForPost,
+  submitCommentViaApi,
   highlightPost,
   onPostsChanged,
   startAutoScroll,
@@ -474,6 +476,5 @@ window.addEventListener("load", () => {
   setTimeout(() => {
     scanFeedNow();
     startFeedObserver();
-    checkPendingComment(); // auto-fill if we landed on a direct post URL
   }, 1500);
 });
