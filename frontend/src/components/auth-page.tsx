@@ -119,7 +119,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
                   mode === "signin" ? (
                     <a
                       href="#"
-                      className="text-xs font-medium text-violet-300 transition-colors hover:text-violet-200"
+                      className="text-xs font-medium text-green-300 transition-colors hover:text-green-200"
                     >
                       Forgot password?
                     </a>
@@ -129,7 +129,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
               <button
                 type="submit"
                 disabled={busy}
-                className="mt-2 rounded-xl bg-gradient-to-r from-violet-600 via-indigo-600 to-cyan-500 px-5 py-3 text-sm font-semibold text-white shadow-[0_0_32px_rgba(124,58,237,0.35)] transition-all duration-300 hover:shadow-[0_0_48px_rgba(124,58,237,0.5)] disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-2 rounded-xl bg-gradient-to-r from-green-600 via-green-500 to-green-400 px-5 py-3 text-sm font-semibold text-white shadow-[0_0_32px_rgba(34,197,94,0.35)] transition-all duration-300 hover:shadow-[0_0_48px_rgba(34,197,94,0.5)] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {busy ? copy.busy : copy.cta}
               </button>
@@ -153,7 +153,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
               {copy.switchText}{" "}
               <Link
                 href={copy.switchHref}
-                className="font-semibold text-violet-300 transition-colors hover:text-violet-200"
+                className="font-semibold text-green-300 transition-colors hover:text-green-200"
               >
                 {copy.switchCta}
               </Link>
@@ -165,8 +165,8 @@ export function AuthPage({ mode }: { mode: Mode }) {
       {/* Right: brand panel */}
       <div className="relative hidden overflow-hidden bg-[#0a0a12] lg:flex lg:w-1/2 lg:flex-col lg:justify-center lg:px-16">
         <div aria-hidden className="pointer-events-none absolute inset-0">
-          <div className="animate-aurora absolute -left-24 -top-24 size-[460px] rounded-full bg-violet-600/25 blur-[130px]" />
-          <div className="animate-aurora absolute -bottom-32 -right-16 size-[420px] rounded-full bg-cyan-500/15 blur-[130px] [animation-delay:-8s]" />
+          <div className="animate-aurora absolute -left-24 -top-24 size-[460px] rounded-full bg-green-600/25 blur-[130px]" />
+          <div className="animate-aurora absolute -bottom-32 -right-16 size-[420px] rounded-full bg-green-500/15 blur-[130px] [animation-delay:-8s]" />
           <div className="bg-grid absolute inset-0 [mask-image:radial-gradient(ellipse_70%_60%_at_50%_40%,black_15%,transparent_75%)]" />
         </div>
 
@@ -177,7 +177,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
               of reviewing drafts replaced two hours of scrolling.”
             </p>
             <footer className="mt-6 flex items-center gap-3">
-              <span className="flex size-11 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-cyan-500 text-sm font-bold text-white">
+              <span className="flex size-11 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-green-400 text-sm font-bold text-white">
                 MK
               </span>
               <div>
@@ -233,7 +233,7 @@ function Field({
         name={id}
         required
         {...input}
-        className="mt-1.5 w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-foreground outline-none transition placeholder:text-zinc-500 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
+        className="mt-1.5 w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-foreground outline-none transition placeholder:text-zinc-500 focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
       />
     </div>
   );

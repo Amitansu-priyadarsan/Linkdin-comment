@@ -1,6 +1,5 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   ArrowRight,
@@ -15,38 +14,31 @@ import type { ReactNode } from "react";
 import { Backdrop, GhostButton, PrimaryButton } from "@/components/ui";
 import { Reveal, SplitWords } from "@/components/fx/motion";
 
-const HeroOrb = dynamic(() => import("@/components/three/hero-orb"), {
-  ssr: false,
-  loading: () => (
-    <div className="h-full w-full rounded-full bg-[radial-gradient(circle,rgba(124,58,237,0.22),transparent_70%)] blur-2xl" />
-  ),
-});
-
 const AVATARS: { initials: string; gradient: string }[] = [
-  { initials: "JM", gradient: "from-violet-500 to-indigo-500" },
-  { initials: "SK", gradient: "from-indigo-500 to-cyan-500" },
-  { initials: "AR", gradient: "from-cyan-500 to-violet-500" },
-  { initials: "LT", gradient: "from-fuchsia-500 to-indigo-500" },
-  { initials: "DP", gradient: "from-violet-500 to-fuchsia-500" },
+  { initials: "JM", gradient: "from-green-500 to-green-700" },
+  { initials: "SK", gradient: "from-green-600 to-green-400" },
+  { initials: "AR", gradient: "from-green-400 to-green-600" },
+  { initials: "LT", gradient: "from-emerald-500 to-green-700" },
+  { initials: "DP", gradient: "from-green-500 to-emerald-500" },
 ];
 
 const CHECKS = ["ToS-safe by design", "No credit card", "5-minute setup"];
 
 const CHIPS: { icon: ReactNode; label: string; position: string; delay: string }[] = [
   {
-    icon: <TrendingUp className="size-3.5 text-cyan-300" aria-hidden />,
+    icon: <TrendingUp className="size-3.5 text-green-300" aria-hidden />,
     label: "+12 profile views today",
     position: "left-0 top-14",
     delay: "0s",
   },
   {
-    icon: <BrainCircuit className="size-3.5 text-violet-300" aria-hidden />,
+    icon: <BrainCircuit className="size-3.5 text-green-300" aria-hidden />,
     label: "Voice match 92/100",
     position: "right-0 top-[38%]",
     delay: "-2.3s",
   },
   {
-    icon: <MessageSquare className="size-3.5 text-indigo-300" aria-hidden />,
+    icon: <MessageSquare className="size-3.5 text-green-400" aria-hidden />,
     label: "3 drafts ready",
     position: "bottom-16 left-10",
     delay: "-4.6s",
@@ -66,11 +58,11 @@ export default function Hero() {
       {/* Thin animated light beams */}
       <div
         aria-hidden
-        className="animate-pulse-glow pointer-events-none absolute inset-y-0 left-[20%] w-px bg-gradient-to-b from-transparent via-violet-500/40 to-transparent"
+        className="animate-pulse-glow pointer-events-none absolute inset-y-0 left-[20%] w-px bg-gradient-to-b from-transparent via-green-500/40 to-transparent"
       />
       <div
         aria-hidden
-        className="animate-pulse-glow pointer-events-none absolute inset-y-0 left-[75%] w-px bg-gradient-to-b from-transparent via-violet-500/40 to-transparent [animation-delay:-2s]"
+        className="animate-pulse-glow pointer-events-none absolute inset-y-0 left-[75%] w-px bg-gradient-to-b from-transparent via-green-500/40 to-transparent [animation-delay:-2s]"
       />
 
       <div className="relative z-10 mx-auto grid w-full max-w-6xl items-center gap-16 px-6 lg:grid-cols-2">
@@ -78,11 +70,11 @@ export default function Hero() {
         <div>
           <Reveal>
             <span className="glass inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium text-foreground/90">
-              <Sparkles className="size-3.5 text-violet-300" aria-hidden />
+              <Sparkles className="size-3.5 text-green-300" aria-hidden />
               Full autopilot &mdash; coming soon
               <span className="relative flex size-1.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-70" />
-                <span className="relative inline-flex size-1.5 rounded-full bg-violet-400" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-70" />
+                <span className="relative inline-flex size-1.5 rounded-full bg-green-400" />
               </span>
             </span>
           </Reveal>
@@ -161,12 +153,39 @@ export default function Hero() {
         </div>
 
         {/* ------------------------------ Right ----------------------------- */}
-        <div className="relative h-[420px] sm:h-[500px] lg:h-[600px]">
+        <div className="relative flex h-[420px] items-center justify-center sm:h-[500px] lg:h-[600px]">
           <div
             aria-hidden
-            className="absolute inset-16 rounded-full bg-violet-600 opacity-15 blur-[110px]"
+            className="absolute inset-6 rounded-full bg-green-600/30 blur-[120px]"
           />
-          <HeroOrb className="absolute inset-0" />
+
+          <Reveal delay={0.3} className="relative z-[1] h-full w-full">
+            <motion.div
+              initial={reduce ? undefined : { scale: 1.03 }}
+              animate={reduce ? undefined : { scale: 1 }}
+              transition={{ duration: 1.8, ease: [0.22, 1, 0.36, 1] }}
+              className="relative h-full w-full"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/hero-cyborg.png?v=5"
+                alt="AI engagement copilot"
+                width={720}
+                height={540}
+                decoding="async"
+                fetchPriority="high"
+                className="h-full w-full object-contain object-center drop-shadow-[0_30px_90px_rgba(34,197,94,0.2)]"
+              />
+              {!reduce && (
+                <motion.div
+                  aria-hidden
+                  animate={{ y: ["-10%", "110%"] }}
+                  transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
+                  className="pointer-events-none absolute inset-x-[12%] z-10 h-px bg-gradient-to-r from-transparent via-green-400/40 to-transparent"
+                />
+              )}
+            </motion.div>
+          </Reveal>
 
           {CHIPS.map((chip) => (
             <div
@@ -178,7 +197,30 @@ export default function Hero() {
               {chip.label}
             </div>
           ))}
+
+          {/* Live-stat card, à la the reference "Our Rate" panel */}
+          <Reveal delay={0.9} className="absolute -bottom-5 right-4 z-10 sm:right-8">
+            <div className="glass-deep rounded-2xl px-5 py-4">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted">
+                Voice match
+              </p>
+              <p className="mt-1 font-display text-3xl font-bold text-foreground">
+                98<span className="text-gradient">%</span>
+              </p>
+              <p className="mt-0.5 text-[10px] text-muted">across 12k+ drafted replies</p>
+            </div>
+          </Reveal>
         </div>
+      </div>
+
+      {/* --------------------- Giant metallic watermark ------------------- */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 -bottom-4 z-0 select-none overflow-hidden sm:bottom-0"
+      >
+        <p className="text-metal whitespace-nowrap text-center font-display text-[19vw] font-black uppercase leading-[0.85] tracking-tighter opacity-25">
+          Influence
+        </p>
       </div>
 
       {/* --------------------------- Scroll cue --------------------------- */}

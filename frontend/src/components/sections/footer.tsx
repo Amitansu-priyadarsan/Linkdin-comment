@@ -71,7 +71,7 @@ export default function Footer() {
 
   return (
     <footer className="relative border-t border-white/5 bg-surface/30">
-      <div className="h-px w-full bg-gradient-to-r from-transparent via-violet-500/50 to-transparent" />
+      <div className="h-px w-full bg-gradient-to-r from-transparent via-green-500/50 to-transparent" />
 
       <div className="mx-auto w-full max-w-6xl px-6 py-16">
         <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr_1fr_1.6fr]">
@@ -93,7 +93,7 @@ export default function Footer() {
                   key={s.label}
                   href="#"
                   aria-label={s.label}
-                  className="glass flex size-9 items-center justify-center rounded-lg text-muted transition-colors duration-300 hover:border-violet-500/40 hover:text-foreground"
+                  className="glass flex size-9 items-center justify-center rounded-lg text-muted transition-colors duration-300 hover:border-green-500/40 hover:text-foreground"
                 >
                   {s.node}
                 </a>
@@ -155,7 +155,7 @@ export default function Footer() {
                 <button
                   type="submit"
                   aria-label="Subscribe"
-                  className="flex items-center justify-center rounded-lg bg-gradient-to-r from-violet-600 to-cyan-500 px-4 py-2 text-white transition-shadow hover:shadow-[0_0_24px_rgba(124,58,237,0.45)]"
+                  className="flex items-center justify-center rounded-lg bg-gradient-to-r from-green-600 to-green-400 px-4 py-2 text-white transition-shadow hover:shadow-[0_0_24px_rgba(34,197,94,0.45)]"
                 >
                   <ArrowRight className="size-4" />
                 </button>

@@ -77,7 +77,7 @@ export default function Nav() {
                   {hovered === link.href && (
                     <motion.span
                       layoutId="nav-underline"
-                      className="absolute inset-x-3.5 bottom-0.5 h-px bg-gradient-to-r from-violet-500 to-cyan-400"
+                      className="absolute inset-x-3.5 bottom-0.5 h-px bg-gradient-to-r from-green-500 to-green-400"
                       transition={
                         reduce
                           ? { duration: 0 }

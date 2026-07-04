@@ -18,7 +18,7 @@ const TESTIMONIALS: Testimonial[] = [
     name: "Maya Okafor",
     role: "Founder, PLG SaaS",
     initials: "MO",
-    gradient: "from-violet-600 to-indigo-500",
+    gradient: "from-green-600 to-green-700",
     quote:
       "Two of last month's demo calls started as comment threads CommentPilot drafted. Profile views are up 3.2x and I spend twelve minutes a day on LinkedIn instead of ninety.",
   },
@@ -26,7 +26,7 @@ const TESTIMONIALS: Testimonial[] = [
     name: "Daniel Reyes",
     role: "SDR Team Lead",
     initials: "DR",
-    gradient: "from-indigo-600 to-cyan-500",
+    gradient: "from-green-700 to-green-400",
     quote:
       "My reps finally stopped posting 'Great insights!' under everything. Drafts come out in each rep's actual voice, and prospects reply. Meetings sourced from LinkedIn are up 40% this quarter.",
   },
@@ -34,7 +34,7 @@ const TESTIMONIALS: Testimonial[] = [
     name: "Priya Nair",
     role: "Fractional CMO",
     initials: "PN",
-    gradient: "from-cyan-500 to-violet-600",
+    gradient: "from-green-400 to-green-600",
     quote:
       "The post scoring is the sleeper feature. It surfaces the eight posts my ICP is actually reading, so every comment lands in front of buyers instead of engagement bait.",
   },
@@ -42,7 +42,7 @@ const TESTIMONIALS: Testimonial[] = [
     name: "Tom Vandermeer",
     role: "DevRel, dev-tools startup",
     initials: "TV",
-    gradient: "from-violet-600 to-indigo-500",
+    gradient: "from-green-600 to-green-700",
     quote:
       "It nails my tone — dry, slightly nerdy, zero exclamation marks. Developers can smell canned comments from orbit, and nobody has clocked a single draft yet.",
   },
@@ -50,7 +50,7 @@ const TESTIMONIALS: Testimonial[] = [
     name: "Alicia Fontaine",
     role: "Agency Owner",
     initials: "AF",
-    gradient: "from-indigo-600 to-cyan-500",
+    gradient: "from-green-700 to-green-400",
     quote:
       "We used to block 90 minutes a day for founder-brand engagement. It's 15 now, and the comments are better. One thread turned into a $4k/month retainer.",
   },
@@ -58,7 +58,7 @@ const TESTIMONIALS: Testimonial[] = [
     name: "Marcus Bell",
     role: "Solo GTM Consultant",
     initials: "MB",
-    gradient: "from-cyan-500 to-violet-600",
+    gradient: "from-green-400 to-green-600",
     quote:
       "Two clients this quarter told me they'd read my comments for months before reaching out. CommentPilot kept me visible while I was heads-down delivering.",
   },
@@ -66,7 +66,7 @@ const TESTIMONIALS: Testimonial[] = [
     name: "Sofia Lindqvist",
     role: "Product Marketing Manager",
     initials: "SL",
-    gradient: "from-violet-600 to-indigo-500",
+    gradient: "from-green-600 to-green-700",
     quote:
       "I review, tweak a word or two, click, done. One-click fill sounds minor until you realize how much friction it removed — I actually show up every single day now.",
   },
@@ -74,7 +74,7 @@ const TESTIMONIALS: Testimonial[] = [
     name: "Jordan Achebe",
     role: "Technical Recruiter",
     initials: "JA",
-    gradient: "from-indigo-600 to-cyan-500",
+    gradient: "from-green-700 to-green-400",
     quote:
       "Candidates recognize my name from the comments before I ever reach out. My InMail response rate went from 12% to 31% in six weeks.",
   },
@@ -82,7 +82,7 @@ const TESTIMONIALS: Testimonial[] = [
     name: "Elena Petrova",
     role: "Head of Growth",
     initials: "EP",
-    gradient: "from-cyan-500 to-violet-600",
+    gradient: "from-green-400 to-green-600",
     quote:
       "Everything runs in my own browser — their servers never touch LinkedIn. That architecture is the only reason I trusted it near my account. Three weeks in: zero warnings, 2,400 new profile views.",
   },
@@ -90,7 +90,7 @@ const TESTIMONIALS: Testimonial[] = [
     name: "Chris Donahue",
     role: "Founding AE",
     initials: "CD",
-    gradient: "from-violet-600 to-indigo-500",
+    gradient: "from-green-600 to-green-700",
     quote:
       "I fed it a handful of my old comments and now the drafts sound more like me than I do before coffee. I edit maybe one in five.",
   },

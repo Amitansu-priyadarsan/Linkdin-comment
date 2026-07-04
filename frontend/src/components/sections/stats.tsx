@@ -50,8 +50,8 @@ export default function Stats() {
         <div className="relative">
           {/* Faint gradient glow behind the panel */}
           <div aria-hidden className="pointer-events-none absolute -inset-10">
-            <div className="absolute left-[8%] top-1/2 h-52 w-[45%] -translate-y-1/2 rounded-full bg-violet-600/15 blur-[110px]" />
-            <div className="absolute right-[8%] top-1/2 h-52 w-[45%] -translate-y-1/2 rounded-full bg-cyan-500/10 blur-[110px]" />
+            <div className="absolute left-[8%] top-1/2 h-52 w-[45%] -translate-y-1/2 rounded-full bg-green-600/15 blur-[110px]" />
+            <div className="absolute right-[8%] top-1/2 h-52 w-[45%] -translate-y-1/2 rounded-full bg-green-500/10 blur-[110px]" />
           </div>
 
           <Stagger className="glass relative grid grid-cols-2 overflow-hidden rounded-3xl lg:grid-cols-4">

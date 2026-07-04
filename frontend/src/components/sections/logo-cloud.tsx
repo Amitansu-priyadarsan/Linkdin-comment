@@ -15,16 +15,16 @@ type Wordmark = {
 
 /* Ampersand lives inside a JS string (not literal JSX text). */
 const WORDMARKS: Wordmark[] = [
-  { name: "Northwind", glyph: "hex", color: "text-violet-400" },
-  { name: "Vertex Labs", glyph: "triangle", color: "text-cyan-400" },
-  { name: "Lumina", glyph: "circle", color: "text-violet-400" },
-  { name: "Nexora", glyph: "hex", color: "text-cyan-400" },
-  { name: "Quantica", glyph: "triangle", color: "text-violet-400" },
-  { name: "Bluepeak", glyph: "circle", color: "text-cyan-400" },
-  { name: "Helios", glyph: "hex", color: "text-violet-400" },
-  { name: "Arclight", glyph: "triangle", color: "text-cyan-400" },
-  { name: "Monoline", glyph: "circle", color: "text-violet-400" },
-  { name: "Fjord & Co", glyph: "hex", color: "text-cyan-400" },
+  { name: "Northwind", glyph: "hex", color: "text-green-400" },
+  { name: "Vertex Labs", glyph: "triangle", color: "text-green-400" },
+  { name: "Lumina", glyph: "circle", color: "text-green-400" },
+  { name: "Nexora", glyph: "hex", color: "text-green-400" },
+  { name: "Quantica", glyph: "triangle", color: "text-green-400" },
+  { name: "Bluepeak", glyph: "circle", color: "text-green-400" },
+  { name: "Helios", glyph: "hex", color: "text-green-400" },
+  { name: "Arclight", glyph: "triangle", color: "text-green-400" },
+  { name: "Monoline", glyph: "circle", color: "text-green-400" },
+  { name: "Fjord & Co", glyph: "hex", color: "text-green-400" },
 ];
 
 /* ----------------------------- Glyph ----------------------------- */

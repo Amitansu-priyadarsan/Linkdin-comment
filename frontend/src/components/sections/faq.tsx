@@ -67,7 +67,7 @@ export default function Faq() {
                       transition={{ duration: 0.3, ease: EASE }}
                       className={`flex size-7 shrink-0 items-center justify-center rounded-full border transition-colors duration-300 ${
                         open
-                          ? "border-violet-500/40 bg-violet-500/15 text-violet-300"
+                          ? "border-green-500/40 bg-green-500/15 text-green-300"
                           : "border-white/10 bg-white/[0.04] text-muted"
                       }`}
                       aria-hidden

@@ -98,7 +98,7 @@ export default function Pricing() {
                   {active && (
                     <motion.span
                       layoutId="billing-pill"
-                      className="absolute inset-0 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600"
+                      className="absolute inset-0 rounded-full bg-gradient-to-r from-green-600 to-green-700"
                       transition={{ duration: 0.35, ease: EASE }}
                     />
                   )}
@@ -122,13 +122,13 @@ export default function Pricing() {
                   transition={{ duration: 0.35, ease: EASE }}
                   className={`relative flex h-full flex-col rounded-3xl p-8 ${
                     plan.highlight
-                      ? "animated-border bg-surface/80 shadow-[0_0_60px_rgba(124,58,237,0.25)] lg:scale-[1.045]"
+                      ? "animated-border bg-surface/80 shadow-[0_0_60px_rgba(34,197,94,0.25)] lg:scale-[1.045]"
                       : "glass"
                   }`}
                 >
                   {plan.badge &&
                     (plan.highlight ? (
-                      <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-violet-600 to-cyan-500 px-4 py-1 text-xs font-bold text-white shadow-[0_0_24px_rgba(124,58,237,0.5)]">
+                      <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-green-600 to-green-400 px-4 py-1 text-xs font-bold text-white shadow-[0_0_24px_rgba(34,197,94,0.5)]">
                         {plan.badge}
                       </span>
                     ) : (
@@ -166,7 +166,7 @@ export default function Pricing() {
                         key={f.text}
                         className="flex items-start gap-2.5 text-sm text-zinc-300"
                       >
-                        <Check className="mt-0.5 size-4 shrink-0 text-cyan-300" />
+                        <Check className="mt-0.5 size-4 shrink-0 text-green-300" />
                         <span className="flex flex-wrap items-center gap-2">
                           {f.text}
                           {f.soon && <SoonBadge />}
@@ -179,7 +179,7 @@ export default function Pricing() {
                     href="/signup"
                     className={`mt-8 inline-flex items-center justify-center rounded-xl px-6 py-3 text-sm font-semibold transition-all duration-300 ${
                       plan.highlight
-                        ? "bg-gradient-to-r from-violet-600 via-indigo-600 to-cyan-500 text-white shadow-[0_0_32px_rgba(124,58,237,0.35)] hover:shadow-[0_0_48px_rgba(124,58,237,0.55)]"
+                        ? "bg-gradient-to-r from-green-600 via-green-500 to-green-400 text-white shadow-[0_0_32px_rgba(34,197,94,0.35)] hover:shadow-[0_0_48px_rgba(34,197,94,0.55)]"
                         : "glass text-foreground hover:border-white/25 hover:bg-white/[0.08]"
                     }`}
                   >
@@ -195,7 +195,7 @@ export default function Pricing() {
           Need seats for a team of 5+?{" "}
           <a
             href="mailto:hello@commentpilot.ai"
-            className="font-semibold text-violet-300 transition-colors hover:text-violet-200"
+            className="font-semibold text-green-300 transition-colors hover:text-green-200"
           >
             Talk to us
           </a>

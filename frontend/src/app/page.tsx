@@ -2,6 +2,7 @@ import Nav from "@/components/sections/nav";
 import Hero from "@/components/sections/hero";
 import Stats from "@/components/sections/stats";
 import Features from "@/components/sections/features";
+import Different from "@/components/sections/different";
 import HowItWorks from "@/components/sections/how-it-works";
 import Showcase from "@/components/sections/showcase";
 import Testimonials from "@/components/sections/testimonials";
@@ -21,6 +22,7 @@ export default function Landing() {
         <Hero />
         <Stats />
         <Features />
+        <Different />
         <HowItWorks />
         <Showcase />
         <Testimonials />

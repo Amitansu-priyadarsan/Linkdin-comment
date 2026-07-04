@@ -4,14 +4,14 @@ import { ArrowRight } from "lucide-react";
 import { GhostButton, PrimaryButton } from "@/components/ui";
 import { Reveal } from "@/components/fx/motion";
 
-const PARTICLES: { top: string; left: string; delay: string; dur: string; cyan?: boolean; big?: boolean }[] = [
+const PARTICLES: { top: string; left: string; delay: string; dur: string; accent?: boolean; big?: boolean }[] = [
   { top: "18%", left: "12%", delay: "0s", dur: "6s" },
-  { top: "68%", left: "8%", delay: "-2s", dur: "8s", cyan: true },
+  { top: "68%", left: "8%", delay: "-2s", dur: "8s", accent: true },
   { top: "28%", left: "88%", delay: "-4s", dur: "7s", big: true },
   { top: "75%", left: "82%", delay: "-1s", dur: "9s" },
-  { top: "12%", left: "55%", delay: "-3s", dur: "7.5s", cyan: true, big: true },
+  { top: "12%", left: "55%", delay: "-3s", dur: "7.5s", accent: true, big: true },
   { top: "85%", left: "42%", delay: "-5s", dur: "6.5s" },
-  { top: "45%", left: "94%", delay: "-2.5s", dur: "8.5s", cyan: true },
+  { top: "45%", left: "94%", delay: "-2.5s", dur: "8.5s", accent: true },
 ];
 
 export default function Cta() {
@@ -21,17 +21,17 @@ export default function Cta() {
         <div className="relative overflow-hidden rounded-[2.5rem] border border-white/10 px-8 py-20 text-center sm:px-16">
           {/* Animated gradient mesh */}
           <div aria-hidden className="pointer-events-none absolute inset-0">
-            <div className="animate-aurora absolute -left-32 -top-32 size-[440px] rounded-full bg-violet-600/25 blur-[120px]" />
-            <div className="animate-aurora absolute -bottom-40 -right-24 size-[420px] rounded-full bg-cyan-500/20 blur-[120px] [animation-delay:-7s]" />
-            <div className="animate-aurora absolute left-1/3 top-1/2 size-[380px] rounded-full bg-indigo-600/20 blur-[110px] [animation-delay:-13s]" />
-            <div className="absolute left-1/2 top-1/2 size-[900px] -translate-x-1/2 -translate-y-1/2 animate-[spin_40s_linear_infinite] rounded-full bg-[conic-gradient(from_0deg,transparent,rgba(124,58,237,0.5),transparent_30%,rgba(6,182,212,0.4),transparent_60%)] opacity-15" />
+            <div className="animate-aurora absolute -left-32 -top-32 size-[440px] rounded-full bg-green-600/25 blur-[120px]" />
+            <div className="animate-aurora absolute -bottom-40 -right-24 size-[420px] rounded-full bg-green-500/20 blur-[120px] [animation-delay:-7s]" />
+            <div className="animate-aurora absolute left-1/3 top-1/2 size-[380px] rounded-full bg-green-700/20 blur-[110px] [animation-delay:-13s]" />
+            <div className="absolute left-1/2 top-1/2 size-[900px] -translate-x-1/2 -translate-y-1/2 animate-[spin_40s_linear_infinite] rounded-full bg-[conic-gradient(from_0deg,transparent,rgba(34,197,94,0.5),transparent_30%,rgba(74,222,128,0.4),transparent_60%)] opacity-15" />
             <div className="bg-grid absolute inset-0 [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,black_10%,transparent_70%)]" />
             {PARTICLES.map((p, i) => (
               <span
                 key={i}
                 className={`animate-float-slow absolute rounded-full ${
                   p.big ? "size-1.5" : "size-1"
-                } ${p.cyan ? "bg-cyan-300/60" : "bg-violet-400/60"}`}
+                } ${p.accent ? "bg-green-300/60" : "bg-green-400/60"}`}
                 style={{
                   top: p.top,
                   left: p.left,

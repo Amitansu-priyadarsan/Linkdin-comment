@@ -90,12 +90,12 @@ export default function HowItWorks() {
           <motion.div
             aria-hidden
             style={{ scaleX: reduce ? 1 : progress }}
-            className="absolute inset-x-0 top-[5px] hidden h-px origin-left bg-gradient-to-r from-violet-500 via-indigo-400 to-cyan-400 shadow-[0_0_14px_rgba(124,58,237,0.75)] lg:block"
+            className="absolute inset-x-0 top-[5px] hidden h-px origin-left bg-gradient-to-r from-green-500 via-green-400 to-green-300 shadow-[0_0_14px_rgba(34,197,94,0.75)] lg:block"
           />
           {/* Mobile vertical timeline line */}
           <div
             aria-hidden
-            className="absolute bottom-6 left-[5px] top-1 w-px bg-gradient-to-b from-violet-500/50 via-white/10 to-cyan-400/30 lg:hidden"
+            className="absolute bottom-6 left-[5px] top-1 w-px bg-gradient-to-b from-green-500/50 via-white/10 to-green-400/30 lg:hidden"
           />
 
           <Stagger className="grid grid-cols-1 gap-10 lg:grid-cols-4 lg:gap-6">
@@ -109,7 +109,7 @@ export default function HowItWorks() {
                   {/* Marker dot on the line */}
                   <span
                     aria-hidden
-                    className="absolute left-0 top-1 size-3 rounded-full bg-gradient-to-br from-violet-500 to-cyan-400 shadow-[0_0_14px_rgba(124,58,237,0.85)] ring-4 ring-background lg:left-7 lg:top-0"
+                    className="absolute left-0 top-1 size-3 rounded-full bg-gradient-to-br from-green-500 to-green-400 shadow-[0_0_14px_rgba(34,197,94,0.85)] ring-4 ring-background lg:left-7 lg:top-0"
                   />
 
                   <div className="glass group flex-1 rounded-2xl p-7 transition-colors duration-300 hover:border-white/20 hover:bg-white/[0.06]">
@@ -117,7 +117,7 @@ export default function HowItWorks() {
                       <span className="font-display text-4xl font-bold tracking-tight text-gradient">
                         {step.num}
                       </span>
-                      <span className="flex size-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-violet-300 transition-colors duration-300 group-hover:border-violet-500/40 group-hover:text-cyan-300">
+                      <span className="flex size-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-green-300 transition-colors duration-300 group-hover:border-green-500/40 group-hover:text-green-300">
                         <Icon className="size-5" aria-hidden />
                       </span>
                     </div>

@@ -1,8 +1,8 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useRef } from "react";
+import { Suspense, useEffect, useMemo, useRef, type ReactNode } from "react";
 import * as THREE from "three";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Float, Sparkles } from "@react-three/drei";
 import { Bloom, EffectComposer } from "@react-three/postprocessing";
 import { useReducedMotion } from "framer-motion";
@@ -79,8 +79,28 @@ function buildNetwork(): Network {
   return { base, osc, edges, pulses };
 }
 
-const NODE_COLOR = new THREE.Color("#a78bfa");
-const HUB_COLOR = new THREE.Color("#67e8f9");
+const NODE_COLOR = new THREE.Color("#4ade80");
+const HUB_COLOR = new THREE.Color("#86efac");
+
+/**
+ * Scales its children so a sphere of `radius` world units always fits
+ * inside the visible canvas — on any aspect ratio. Without this, a
+ * narrow canvas slices geometry off at its left/right edges.
+ */
+function FitToView({
+  radius,
+  margin = 0.9,
+  children,
+}: {
+  radius: number;
+  margin?: number;
+  children: ReactNode;
+}) {
+  const { viewport } = useThree();
+  const half = Math.min(viewport.width, viewport.height) / 2;
+  const scale = Math.min(1, (half * margin) / radius);
+  return <group scale={scale}>{children}</group>;
+}
 
 function NeuralNetwork({ active }: { active: boolean }) {
   const group = useRef<THREE.Group>(null);
@@ -103,7 +123,7 @@ function NeuralNetwork({ active }: { active: boolean }) {
     vec: THREE.Vector3;
   } | null>(null);
 
-  // Per-instance node colors (hubs are cyan and slightly brighter).
+  // Per-instance node colors (hubs are brighter green).
   useEffect(() => {
     const mesh = inst.current;
     if (!mesh) return;
@@ -192,11 +212,11 @@ function NeuralNetwork({ active }: { active: boolean }) {
       {/* Nucleus */}
       <mesh>
         <sphereGeometry args={[0.26, 32, 32]} />
-        <meshBasicMaterial color="#7c3aed" transparent opacity={0.85} />
+        <meshBasicMaterial color="#22c55e" transparent opacity={0.85} />
       </mesh>
       <mesh scale={1.55}>
         <sphereGeometry args={[0.26, 24, 24]} />
-        <meshBasicMaterial color="#7c3aed" transparent opacity={0.12} />
+        <meshBasicMaterial color="#22c55e" transparent opacity={0.12} />
       </mesh>
 
       {/* Nodes */}
@@ -214,7 +234,7 @@ function NeuralNetwork({ active }: { active: boolean }) {
           />
         </bufferGeometry>
         <lineBasicMaterial
-          color="#6366f1"
+          color="#16a34a"
           transparent
           opacity={0.3}
           blending={THREE.AdditiveBlending}
@@ -231,7 +251,7 @@ function NeuralNetwork({ active }: { active: boolean }) {
           }}
         >
           <sphereGeometry args={[0.05, 12, 12]} />
-          <meshBasicMaterial color="#22d3ee" toneMapped={false} />
+          <meshBasicMaterial color="#a3e635" toneMapped={false} />
         </mesh>
       ))}
     </group>
@@ -241,30 +261,32 @@ function NeuralNetwork({ active }: { active: boolean }) {
 function Scene({ active }: { active: boolean }) {
   return (
     <>
-      <Float
-        speed={active ? 1.2 : 0}
-        rotationIntensity={active ? 0.2 : 0}
-        floatIntensity={active ? 0.7 : 0}
-      >
-        <NeuralNetwork active={active} />
-      </Float>
+      <FitToView radius={2.4}>
+        <Float
+          speed={active ? 1.2 : 0}
+          rotationIntensity={active ? 0.2 : 0}
+          floatIntensity={active ? 0.7 : 0}
+        >
+          <NeuralNetwork active={active} />
+        </Float>
 
-      <Sparkles
-        count={50}
-        scale={7}
-        size={1.8}
-        speed={active ? 0.3 : 0}
-        opacity={0.4}
-        color="#a78bfa"
-      />
+        <Sparkles
+          count={50}
+          scale={5}
+          size={1.8}
+          speed={active ? 0.3 : 0}
+          opacity={0.4}
+          color="#4ade80"
+        />
+      </FitToView>
 
       <EffectComposer>
         <Bloom
-          intensity={1.0}
-          luminanceThreshold={0.2}
-          luminanceSmoothing={0.35}
+          intensity={1.2}
+          luminanceThreshold={0.15}
+          luminanceSmoothing={0.3}
           mipmapBlur
-          radius={0.7}
+          radius={0.75}
         />
       </EffectComposer>
     </>

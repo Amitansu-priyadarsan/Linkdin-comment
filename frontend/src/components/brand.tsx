@@ -8,7 +8,7 @@ export function Logo({ className = "" }: { className?: string }) {
       href="/"
       className={`flex items-center gap-2.5 font-display font-semibold tracking-tight text-foreground ${className}`}
     >
-      <span className="relative flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 via-indigo-600 to-cyan-500 text-white shadow-[0_0_24px_rgba(124,58,237,0.45)]">
+      <span className="relative flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-green-600 via-green-500 to-green-400 text-white shadow-[0_0_24px_rgba(34,197,94,0.45)]">
         <svg
           viewBox="0 0 24 24"
           fill="none"

@@ -76,9 +76,9 @@ export default function Features() {
             const Icon = feature.icon;
             return (
               <StaggerItem key={feature.title} className="h-full">
-                <TiltCard className="glass h-full rounded-2xl border border-white/10 p-7 transition-colors duration-300 hover:border-violet-500/40">
-                  <div className="flex size-11 items-center justify-center rounded-xl border border-white/10 bg-gradient-to-br from-violet-600/25 to-cyan-500/15">
-                    <Icon className="size-5 text-violet-300 transition-transform duration-300 group-hover:rotate-6 group-hover:scale-110" />
+                <TiltCard className="glass h-full rounded-2xl border border-white/10 p-7 transition-colors duration-300 hover:border-green-500/40">
+                  <div className="flex size-11 items-center justify-center rounded-xl border border-white/10 bg-gradient-to-br from-green-600/25 to-green-400/15">
+                    <Icon className="size-5 text-green-300 transition-transform duration-300 group-hover:rotate-6 group-hover:scale-110" />
                   </div>
                   <h3 className="mt-5 flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-lg font-semibold text-foreground">
                     {feature.title}
